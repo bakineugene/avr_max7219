@@ -30,6 +30,13 @@ void writeByte(uint8_t byte)
   while(!(SPSR & (1 << SPIF)));     // Loop until complete bit set
 }
 
+// Sends word through SPI
+void writeWord(uint8_t address, uint8_t data) 
+{
+  writeByte(address);	// Write first byte
+  writeByte(data);      // Write Second byte
+}
+
 // Initializes all cascaded devices
 void initMatrix() 
 {
@@ -100,14 +107,49 @@ void initBuffer(void)
 		buffer[i] = 0x00;
 }       
 
+// Displays current buffer on the cascaded devices
+void displayBuffer()
+{   
+   for(uint8_t i = 0; i < NUM_DEVICES; i++) // For each cascaded device
+   {
+	   for(uint8_t j = 1; j < 9; j++) // For each column
+	   {
+		   SLAVE_SELECT;
+		   
+		   for(uint8_t k = 0; k < i; k++) // Write Pre No-Op code
+			   writeWord(0x00, 0x00);
+		   
+		   writeWord(j, buffer[j + i*8 - 1]); // Write column data from buffer
+		   
+		   for(uint8_t k = NUM_DEVICES-1; k > i; k--) // Write Post No-Op code
+			   writeWord(0x00, 0x00);
+		   
+		   SLAVE_DESELECT;
+	   }
+   }
+}
+
 
 // Main Loop
 int main(void) {
-  initSPI();
-  initMatrix();
-  clearMatrix();
-  initBuffer();
+    initSPI();
+    initMatrix();
+    clearMatrix();
+    initBuffer();
 
-  return 0;
+	buffer[NUM_DEVICES*8 - 1] = 0b00111100;
+	buffer[NUM_DEVICES*8 - 2] = 0b01001010;
+	buffer[NUM_DEVICES*8 - 3] = 0b01001001;
+	buffer[NUM_DEVICES*8 - 4] = 0b01001001;
+	buffer[NUM_DEVICES*8 - 5] = 0b00110000;
+
+	buffer[NUM_DEVICES*8 - 9] = 0b00111100;
+	buffer[NUM_DEVICES*8 - 10] = 0b01001010;
+	buffer[NUM_DEVICES*8 - 11] = 0b01001001;
+	buffer[NUM_DEVICES*8 - 12] = 0b01001001;
+	buffer[NUM_DEVICES*8 - 13] = 0b00110000;
+    displayBuffer();	
+
+    return 0;
 }
 
