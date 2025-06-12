@@ -1,3 +1,5 @@
+// Source - https://embeddedthoughts.com/2016/04/19/scrolling-text-on-the-8x8-led-matrix-with-max7219-drivers/
+
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/pgmspace.h>
@@ -73,10 +75,39 @@ void initMatrix()
 	SLAVE_DESELECT;
 }
 
+// Clears all columns on all devices
+void clearMatrix(void)
+{
+	for(uint8_t x = 1; x < 9; x++) // for all columns
+	{   
+        SLAVE_SELECT;
+        for(uint8_t i = 0; i < NUM_DEVICES; i++)
+		{
+			writeByte(x);    // Select column x
+			writeByte(0x00); // Set column to 0
+		}
+		SLAVE_DESELECT;
+	}
+}
+
+// Buffer array of bytes to store current display data for each column in each cascaded device
+uint8_t buffer [NUM_DEVICES*8];	
+
+// Initializes buffer empty
+void initBuffer(void)
+{   
+	for(uint8_t i = 0; i < NUM_DEVICES*8; i++)
+		buffer[i] = 0x00;
+}       
+
+
 // Main Loop
 int main(void) {
   initSPI();
   initMatrix();
+  clearMatrix();
+  initBuffer();
+
   return 0;
 }
 
